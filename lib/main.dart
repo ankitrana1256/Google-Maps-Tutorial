@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -31,7 +33,6 @@ class MyApp extends StatelessWidget {
 
 class MyGoogleMap extends StatelessWidget {
   const MyGoogleMap({super.key});
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -72,9 +73,14 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   final Set<Marker> markers = {};
   GoogleMapController? googleMapController;
 
+  // Changing Marker icon with our icon
+  BitmapDescriptor myPos = BitmapDescriptor.defaultMarker;
+
   // We need to listen for our coordinates before build
   @override
   void initState() {
+    // Loading marker before the build
+    LoadMarker();
     super.initState();
     streamMyLocation();
   }
@@ -86,6 +92,32 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     streamLocation.cancel();
     super.dispose();
   }
+
+// ------------------------------------------------------------------------------------------------------------------------------------
+
+  // We shouldn't use future in initState
+  Future<void> LoadMarker() async {
+    myPos = await getMapIcon("assets/markers/AvatarM.png");
+  }
+
+  // This functions will take the uint and convert it to bitmap
+  Future<BitmapDescriptor> getMapIcon(String iconPath) async {
+    final Uint8List endMarker = await getBytesFromAsset(iconPath, 120);
+    final icon = BitmapDescriptor.fromBytes(endMarker);
+    return icon;
+  }
+
+  // This functions will take the image from asset and convert it to uint
+  Future<Uint8List> getBytesFromAsset(String path, int width) async {
+    ByteData data = await rootBundle.load(path);
+    var codec = await instantiateImageCodec(data.buffer.asUint8List(),
+        targetWidth: width);
+    FrameInfo fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ImageByteFormat.png))!
+        .buffer
+        .asUint8List();
+  }
+// ------------------------------------------------------------------------------------------------------------------------------------
 
   // Function to keep track of my location
   void streamMyLocation() {
@@ -104,25 +136,48 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
         );
         var myloc = Marker(
             markerId: const MarkerId("Your Position"),
+
+            // Specifying marker
+            icon: myPos,
             position: LatLng(loc.latitude ?? 0.0, loc.longitude ?? 0.0));
         markers.add(myloc);
       });
     });
   }
 
+//-------------------------------------------------------------------------------------------------------------------------------------
+
+  // To place a destination marker
+  void putDestination(coords) {
+    var destination = Marker(
+      markerId: const MarkerId("Destination"),
+      // Changing color of the marker
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+      position: LatLng(coords.latitude, coords.longitude),
+    );
+    markers.add(destination);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(onPressed: () {
-        // Trigger to animate location
-        googleMapController!.animateCamera(
-          CameraUpdate.newCameraPosition(initialCameraPosition),
-        );
-      }),
+      floatingActionButton: FloatingActionButton(
+          child: Icon(Icons.navigation),
+          backgroundColor: Colors.green,
+          onPressed: () {
+            // Trigger to animate location
+            googleMapController!.animateCamera(
+              CameraUpdate.newCameraPosition(initialCameraPosition),
+            );
+          }),
       body: GoogleMap(
         initialCameraPosition: initialCameraPosition,
         compassEnabled: false,
         zoomControlsEnabled: false,
+
+        // Triggering destination marker on long press
+        onLongPress: (coords) => putDestination(coords),
+
         onMapCreated: (controller) {
           googleMapController = controller;
         },
