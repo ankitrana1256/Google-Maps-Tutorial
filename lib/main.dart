@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:ui';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+
+import 'getroutesdata.dart';
 
 void main() {
   // To make statusbar visible
@@ -76,6 +77,17 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   // Changing Marker icon with our icon
   BitmapDescriptor myPos = BitmapDescriptor.defaultMarker;
 
+// --------------------------------------------------------------------------------------------------------------------------
+
+  // A list for containing all points and a set of polylines to pass to GoogleMap
+  List<LatLng> polyPoints = [];
+  Set<Polyline> polyLines = {};
+
+  // Make four variables for storing longitude and latitude for polylines
+  late LatLng startPos;
+  late LatLng endPos;
+// -----------------------------------------------------------------------------------------------------------------------------
+
   // We need to listen for our coordinates before build
   @override
   void initState() {
@@ -91,6 +103,53 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     googleMapController?.dispose();
     streamLocation.cancel();
     super.dispose();
+  }
+
+//------------------------------------------------------------------------------------------------------------------------------------
+
+  void getDirections() async {
+    // Lets say starting position is our initialCameraPosition
+    startPos = initialCameraPosition.target;
+
+    // For Clearing polylines each time
+    setState(() {
+      polyPoints = [];
+    });
+
+    // Getting Value from JSON
+    NetworkHelper network = NetworkHelper(
+      startLat: startPos.latitude,
+      startLng: startPos.longitude,
+      endLat: endPos.latitude,
+      endLng: endPos.longitude,
+    );
+    try {
+      var data = await network.getData();
+      LineString ls =
+          LineString(data['features'][0]['geometry']['coordinates']);
+
+      for (int i = 0; i < ls.lineString.length; i++) {
+        polyPoints.add(LatLng(ls.lineString[i][1], ls.lineString[i][0]));
+      }
+
+      if (polyPoints.length == ls.lineString.length) {
+        setPolyLines();
+      }
+    } catch (e) {
+      Fluttertoast.showToast(
+          msg: 'Response error please check your connection');
+    }
+  }
+
+  // Putting Value in polylines
+  void setPolyLines() {
+    Polyline polyline = Polyline(
+      polylineId: const PolylineId('route'),
+      color: Colors.blue,
+      points: polyPoints,
+    );
+    polyLines.add(polyline);
+    setState(() {});
   }
 
 // ------------------------------------------------------------------------------------------------------------------------------------
@@ -153,6 +212,17 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
       markerId: const MarkerId("Destination"),
       // Changing color of the marker
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+
+      // Setting value to endPos
+      onTap: () {
+        endPos = LatLng(coords.latitude, coords.longitude);
+      },
+      infoWindow: InfoWindow(
+        title: "Navigate",
+
+        // Click on marker then click on navigate
+        onTap: () => getDirections(),
+      ),
       position: LatLng(coords.latitude, coords.longitude),
     );
     markers.add(destination);
@@ -182,9 +252,18 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
         onMapCreated: (controller) {
           googleMapController = controller;
         },
+
         // We defined a set of marker so we can have multiple markers
         markers: markers,
+        polylines: polyLines,
       ),
     );
   }
 }
+
+// --------------------------------------------------------------------------------------------------------------
+class LineString {
+  LineString(this.lineString);
+  List<dynamic> lineString;
+}
+// ------------------------------------------------------------------------------------------------------------------------------------
