@@ -26,26 +26,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyGoogleMap(),
+      home: GoogleMapWidget(),
       debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-class MyGoogleMap extends StatelessWidget {
-  const MyGoogleMap({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          elevation: 2,
-          title: const Text("Google Map"),
-          centerTitle: true,
-          backgroundColor: Colors.green[300],
-        ),
-        body: const GoogleMapWidget(),
-      ),
     );
   }
 }
@@ -87,6 +69,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   // Make four variables for storing longitude and latitude for polylines
   late LatLng startPos;
   late LatLng endPos;
+
 // -----------------------------------------------------------------------------------------------------------------------------
 
   // We need to listen for our coordinates before build
@@ -178,6 +161,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
         .buffer
         .asUint8List();
   }
+
 // ------------------------------------------------------------------------------------------------------------------------------------
 
   // Function to keep track of my location
@@ -192,7 +176,6 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
       setState(() {
         initialCameraPosition = CameraPosition(
           target: LatLng(loc.latitude ?? 0.0, loc.longitude ?? 0.0),
-          tilt: 40,
           zoom: 16,
         );
         var myloc = Marker(
@@ -235,9 +218,15 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        elevation: 2,
+        title: const Text("Google Map"),
+        centerTitle: true,
+        backgroundColor: Colors.green[300],
+      ),
       floatingActionButton: FloatingActionButton(
           child: Icon(Icons.navigation),
-          backgroundColor: Colors.green,
+          backgroundColor: Colors.green[300],
           onPressed: () {
             // Trigger to animate location
             googleMapController!.animateCamera(
