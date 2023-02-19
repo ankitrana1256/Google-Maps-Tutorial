@@ -76,6 +76,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
 
   // Changing Marker icon with our icon
   BitmapDescriptor myPos = BitmapDescriptor.defaultMarker;
+  late BitmapDescriptor myDesMarker;
 
 // --------------------------------------------------------------------------------------------------------------------------
 
@@ -145,7 +146,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   void setPolyLines() {
     Polyline polyline = Polyline(
       polylineId: const PolylineId('route'),
-      color: Colors.blue,
+      color: Colors.red,
       points: polyPoints,
     );
     polyLines.add(polyline);
@@ -157,6 +158,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   // We shouldn't use future in initState
   Future<void> LoadMarker() async {
     myPos = await getMapIcon("assets/markers/AvatarM.png");
+    myDesMarker = await getMapIcon("assets/markers/AvatarF.png");
   }
 
   // This functions will take the uint and convert it to bitmap
@@ -211,7 +213,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     var destination = Marker(
       markerId: const MarkerId("Destination"),
       // Changing color of the marker
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+      icon: myDesMarker,
 
       // Setting value to endPos
       onTap: () {
@@ -229,6 +231,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -245,6 +248,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
         initialCameraPosition: initialCameraPosition,
         compassEnabled: false,
         zoomControlsEnabled: false,
+        mapToolbarEnabled: false,
 
         // Triggering destination marker on long press
         onLongPress: (coords) => putDestination(coords),
@@ -261,7 +265,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   }
 }
 
-// --------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------------------------------------------
 class LineString {
   LineString(this.lineString);
   List<dynamic> lineString;
